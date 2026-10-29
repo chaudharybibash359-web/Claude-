@@ -165,46 +165,82 @@ fun ArtifactViewerScreen(
                     .padding(8.dp)
             ) {
                 if (selectedTab == 0) {
-                    // Sandbox Preview in WebView
-                    Card(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp)),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        DisposableEffect(artifact.id) {
-                            onDispose {
-                                // Clean disposal when switching artifacts or closing screen
-                            }
+                    var webViewError by remember { mutableStateOf(false) }
+
+                    if (webViewError) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                text = "Live preview is not supported on this device. Displaying source code:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            CodeBlockView(
+                                code = artifact.content,
+                                language = artifact.language,
+                                onOpenArtifact = null,
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
-                        AndroidView(
-                            factory = { ctx ->
-                                WebView(ctx).apply {
-                                    webViewClient = WebViewClient()
-                                    settings.javaScriptEnabled = true
-                                    settings.domStorageEnabled = true
-                                    settings.useWideViewPort = true
-                                    settings.loadWithOverviewMode = true
-                                    settings.cacheMode = WebSettings.LOAD_NO_CACHE
-                                    settings.allowFileAccess = false
-                                    settings.allowContentAccess = false
-                                    val html = ClaudeParser.prepareHtmlForPreview(artifact.content, artifact.type)
-                                    loadDataWithBaseURL("about:blank", html, "text/html", "UTF-8", null)
-                                }
-                            },
-                            update = { webView ->
-                                val html = ClaudeParser.prepareHtmlForPreview(artifact.content, artifact.type)
-                                webView.loadDataWithBaseURL("about:blank", html, "text/html", "UTF-8", null)
-                            },
-                            onRelease = { webView ->
-                                webView.stopLoading()
-                                webView.destroy()
-                            },
+                    } else {
+                        // Sandbox Preview in WebView
+                        Card(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .testTag("artifact_webview")
-                        )
+                                .clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            DisposableEffect(artifact.id) {
+                                onDispose {
+                                    // Clean disposal
+                                }
+                            }
+                            AndroidView(
+                                factory = { ctx ->
+                                    try {
+                                        WebView(ctx).apply {
+                                            webViewClient = WebViewClient()
+                                            settings.javaScriptEnabled = true
+                                            settings.domStorageEnabled = true
+                                            settings.useWideViewPort = true
+                                            settings.loadWithOverviewMode = true
+                                            settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                                            settings.allowFileAccess = false
+                                            settings.allowContentAccess = false
+                                            val html = ClaudeParser.prepareHtmlForPreview(artifact.content, artifact.type)
+                                            loadDataWithBaseURL("about:blank", html, "text/html", "UTF-8", null)
+                                        }
+                                    } catch (e: Throwable) {
+                                        webViewError = true
+                                        android.view.View(ctx)
+                                    }
+                                },
+                                update = { webView ->
+                                    if (webView is WebView) {
+                                        try {
+                                            val html = ClaudeParser.prepareHtmlForPreview(artifact.content, artifact.type)
+                                            webView.loadDataWithBaseURL("about:blank", html, "text/html", "UTF-8", null)
+                                        } catch (e: Throwable) {
+                                            webViewError = true
+                                        }
+                                    }
+                                },
+                                onRelease = { webView ->
+                                    if (webView is WebView) {
+                                        try {
+                                            webView.stopLoading()
+                                            webView.destroy()
+                                        } catch (e: Throwable) {
+                                            // Ignore cleanup error
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("artifact_webview")
+                            )
+                        }
                     }
                 } else {
                     // Code View

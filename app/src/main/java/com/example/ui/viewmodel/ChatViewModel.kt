@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -54,16 +55,17 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val activeMessages: StateFlow<List<ChatMessageEntity>> = _activeMessages.asStateFlow()
 
     init {
-        // Create initial conversation or pick latest
+        // Create initial conversation or pick latest once on startup
         viewModelScope.launch {
-            conversations.collect { list ->
-                if (_uiState.value.currentConversation == null) {
-                    if (list.isNotEmpty()) {
-                        selectConversation(list.first())
-                    } else {
-                        startNewChat()
-                    }
+            try {
+                val list = repository.getConversations().first()
+                if (list.isNotEmpty()) {
+                    selectConversation(list.first())
+                } else {
+                    startNewChat()
                 }
+            } catch (e: Exception) {
+                startNewChat()
             }
         }
     }

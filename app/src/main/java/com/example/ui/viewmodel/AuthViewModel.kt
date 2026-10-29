@@ -34,15 +34,23 @@ data class AuthUiState(
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val auth: FirebaseAuth = Firebase.auth
+    private val auth: FirebaseAuth? by lazy {
+        try {
+            Firebase.auth
+        } catch (e: Throwable) {
+            Log.w(TAG, "FirebaseAuth unavailable: ${e.message}")
+            null
+        }
+    }
+
     private val firestoreRepo = FirestoreClaudeRepository(application)
 
     private val _uiState = MutableStateFlow(
-        AuthUiState(user = auth.currentUser)
+        AuthUiState(user = runCatching { auth?.currentUser }.getOrNull())
     )
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+    private val authStateListener: FirebaseAuth.AuthStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         val user = firebaseAuth.currentUser
         _uiState.value = _uiState.value.copy(
             user = user,
@@ -58,17 +66,29 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         photoUrl = user.photoUrl?.toString()
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error syncing user profile to Firestore", e)
+                    Log.w(TAG, "Error syncing user profile to Firestore: ${e.message}")
                 }
             }
         }
     }
 
     init {
-        auth.addAuthStateListener(authStateListener)
+        try {
+            auth?.addAuthStateListener(authStateListener)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Could not attach authStateListener: ${e.message}")
+        }
     }
 
     fun signInWithGoogle(context: Context) {
+        val currentAuth = auth
+        if (currentAuth == null) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Authentication service is unavailable on this device."
+            )
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             try {
@@ -91,7 +111,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                     val authCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
-                    auth.signInWithCredential(authCredential).await()
+                    currentAuth.signInWithCredential(authCredential).await()
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -112,7 +132,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun signOut() {
-        auth.signOut()
+        try {
+            auth?.signOut()
+        } catch (e: Throwable) {
+            Log.w(TAG, "Error during signOut: ${e.message}")
+        }
         _uiState.value = AuthUiState(user = null)
     }
 
@@ -122,6 +146,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        auth.removeAuthStateListener(authStateListener)
+        try {
+            auth?.removeAuthStateListener(authStateListener)
+        } catch (e: Throwable) {
+            // Ignore on cleanup
+        }
     }
 }

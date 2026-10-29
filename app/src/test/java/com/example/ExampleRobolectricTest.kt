@@ -64,4 +64,11 @@ class ExampleRobolectricTest {
         assertTrue(parsed.artifacts[0].content.contains("Live Game"))
         assertTrue(parsed.cleanContent.contains("Here is the requested solution"))
     }
+
+    @Test
+    fun `test launch MainActivity`() {
+        val activityController = org.robolectric.Robolectric.buildActivity(MainActivity::class.java)
+        activityController.setup()
+        assertNotNull(activityController.get())
+    }
 }
