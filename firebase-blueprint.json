@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "User": {
+      "path": "users/{userId}",
+      "fields": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string", "optional": true },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "Conversation": {
+      "path": "users/{userId}/conversations/{conversationId}",
+      "fields": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "modelId": { "type": "string" },
+        "thinkingEnabled": { "type": "boolean" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    },
+    "Message": {
+      "path": "users/{userId}/conversations/{conversationId}/messages/{messageId}",
+      "fields": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "sender": { "type": "string" },
+        "content": { "type": "string" },
+        "thinkingContent": { "type": "string", "optional": true },
+        "timestamp": { "type": "timestamp" },
+        "modelUsed": { "type": "string", "optional": true }
+      }
+    }
+  }
+}

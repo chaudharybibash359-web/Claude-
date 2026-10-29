@@ -1,0 +1,6 @@
+{
+  "name": "Claude AI",
+  "description": "Claude AI premium version with unlimited chat, Claude 3.7 Sonnet thinking mode, interactive coding artifacts, and multi-model intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

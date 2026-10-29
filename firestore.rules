@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'displayName', 'email', 'createdAt', 'updatedAt'])
+        && data.id is string
+        && data.displayName is string
+        && data.email is string
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidConversation(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'modelId', 'thinkingEnabled', 'createdAt', 'updatedAt'])
+        && data.id is string
+        && data.userId == userId
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 200
+        && data.modelId is string
+        && data.thinkingEnabled is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMessage(data, userId) {
+      return data.keys().hasAll(['id', 'conversationId', 'userId', 'sender', 'content', 'timestamp'])
+        && data.id is string
+        && data.conversationId is string
+        && data.userId == userId
+        && data.sender in ['user', 'assistant']
+        && data.content is string
+        && data.content.size() > 0
+        && data.timestamp is timestamp;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isOwner(userId);
+
+      // User's private conversations
+      match /conversations/{conversationId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidConversation(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+
+        // Messages under conversation
+        match /messages/{messageId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidMessage(request.resource.data, userId);
+          allow update: if isOwner(userId) && isValidMessage(request.resource.data, userId);
+          allow delete: if isOwner(userId);
+        }
+      }
+    }
+  }
+}

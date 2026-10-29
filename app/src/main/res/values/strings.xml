@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Claude</string>
+    <string name="app_tagline">Claude AI Premium Edition</string>
+    <string name="new_chat">New Chat</string>
+    <string name="artifacts">Artifacts</string>
+    <string name="projects">Projects</string>
+    <string name="settings">Settings</string>
+    <string name="thinking_mode">Extended Thinking</string>
+    <string name="model_opus_55">Claude Opus 5.5 (Omni-Pinnacle)</string>
+    <string name="model_fable_51">Fable 5.1 AI (Creative Genius)</string>
+    <string name="model_sonnet_thinking">Claude 3.7 Sonnet (Thinking)</string>
+    <string name="model_sonnet_coding">Claude 3.5 Sonnet (Coding King)</string>
+    <string name="model_haiku_fast">Claude 3.5 Haiku (Lightning Fast)</string>
+    <string name="model_opus_intellect">Claude 3 Opus (Deep Reasoner)</string>
+    <string name="default_web_client_id" translatable="false">139193719025-2vof4hbvi2a5eg2jbugp58np0ohtl5hp.apps.googleusercontent.com</string>
+</resources>
